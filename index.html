@@ -6,6 +6,11 @@
 <title>Design Aptitude Test | Frameboxx Bandra</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  window.addEventListener("load", function() {
+    if(typeof emailjs !== "undefined") emailjs.init("tVPOB5fwnV0gF33cu");
+  });
+</script>
 <style>
 :root {
   --beige:#F5EFE4;--beige-light:#FAF6F0;--beige-mid:#EDE3D2;
@@ -377,29 +382,50 @@ function stopConfetti(){
 async function sendMail(pass,pct){
   const ms=document.getElementById("mail-status");
   ms.textContent="Sending your result by email…";ms.className="mail-status";
-  if(EJS_PUBLIC_KEY==="DISABLED"){
-    ms.textContent="⚠ EmailJS not configured — result not emailed.";ms.className="mail-status err";
-    return;
-  }
   try{
+    // Re-init in case page just loaded
     emailjs.init(EJS_PUBLIC_KEY);
-    const subject=pass?"You passed! Frameboxx Scholarship Result":"Your Aptitude Test Result — Frameboxx Bandra";
+    const subject=pass
+      ?"🎓 You Passed! Frameboxx Scholarship Result"
+      :"Your Aptitude Test Result — Frameboxx Bandra";
     const body=pass
-      ?`Dear ${candidate.name},\n\nCongratulations! We are pleased to inform you that you have successfully passed the aptitude test with a score of ${pct}%.\n\nYou are now eligible to avail the Frameboxx Scholarship. Please contact the helpdesk at Frameboxx Bandra for further details and next steps.\n\nWarm regards,\nTeam Frameboxx Bandra\nPremier Academy for Media & Creative Arts`
-      :`Dear ${candidate.name},\n\nWe regret to inform you that you did not pass the aptitude test (Score: ${pct}%).\n\nUnfortunately, you are not eligible for the Frameboxx Scholarship at this time. You can retake the test after six months. Please reach out to our helpdesk if you have any questions.\n\nWarm regards,\nTeam Frameboxx Bandra\nPremier Academy for Media & Creative Arts`;
-    await emailjs.send(EJS_SERVICE_ID,EJS_TEMPLATE_ID,{
-      to_name:candidate.name,
-      to_email:candidate.email,
-      subject,
-      message:body,
-      score_pct:pct+"%",
-      score_raw:score+"/"+Qs.length,
-      result:pass?"PASS ✓":"FAIL ✗"
+      ?`Dear ${candidate.name},
+
+Congratulations! We are pleased to inform you that you have successfully passed the aptitude test with a score of ${pct}% (${score}/${Qs.length}).
+
+You are now eligible to avail the Frameboxx Scholarship. Please contact the helpdesk at Frameboxx Bandra for further details and next steps.
+
+Warm regards,
+Team Frameboxx Bandra
+Premier Academy for Media & Creative Arts
+Bandra, Mumbai`
+      :`Dear ${candidate.name},
+
+We regret to inform you that you did not pass the aptitude test this time (Score: ${pct}% — ${score}/${Qs.length}).
+
+Unfortunately, you are not eligible for the Frameboxx Scholarship at this time. You can retake the test after six months. Please reach out to our helpdesk if you have any questions — we encourage you to keep practising!
+
+Warm regards,
+Team Frameboxx Bandra
+Premier Academy for Media & Creative Arts
+Bandra, Mumbai`;
+    const response = await emailjs.send(EJS_SERVICE_ID, EJS_TEMPLATE_ID, {
+      to_name:    candidate.name,
+      to_email:   candidate.email,
+      subject:    subject,
+      message:    body,
+      score_pct:  pct + "%",
+      score_raw:  score + "/" + Qs.length,
+      result:     pass ? "PASS ✓" : "FAIL ✗",
+      mobile:     candidate.mob
     });
-    ms.textContent="✓ Result emailed to "+candidate.email;ms.className="mail-status ok";
+    console.log("EmailJS success:", response.status, response.text);
+    ms.textContent="✓ Result emailed to " + candidate.email;
+    ms.className="mail-status ok";
   } catch(e){
-    console.warn("EmailJS error:",e);
-    ms.textContent="Could not send email. Please note your score: "+pct+"%.";ms.className="mail-status err";
+    console.error("EmailJS error:", JSON.stringify(e));
+    ms.textContent="⚠ Email could not be sent (Error: " + (e.text || e.message || JSON.stringify(e)) + "). Score: " + pct + "%";
+    ms.className="mail-status err";
   }
 }
 
